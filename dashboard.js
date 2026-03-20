@@ -20,6 +20,24 @@ async function init() {
 }
 
 init()
+// ================= MATCH LOGIC =================
+
+function stringToArray(str) {
+  return str
+    ?.toLowerCase()
+    .split(",")
+    .map(s => s.trim())
+}
+
+function isMatch(userTeaches, myLearns) {
+
+  const teachesArr = stringToArray(userTeaches)
+  const learnsArr = stringToArray(myLearns)
+
+  return teachesArr.some(skill =>
+    learnsArr.includes(skill)
+  )
+}
 
 // ================= TOAST =================
 function showToast(msg) {
@@ -119,56 +137,44 @@ async function loadAllUsers() {
     })
 }
 
-// ================= MATCHES =================
 document.getElementById("findMatches").onclick = async () => {
 
-    const { data: myProfile } = await supabaseClient
-        .from("profiles")
-        .select("*")
-        .eq("id", currentUserId)
-        .single()
+  const { data: myProfile } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", currentUserId)
+    .single()
 
-    const { data: users } = await supabaseClient
-        .from("profiles")
-        .select("*")
+  const { data: users } = await supabaseClient
+    .from("profiles")
+    .select("*")
 
-    const container = document.getElementById("matchContainer")
-    container.innerHTML = ""
+  const container = document.getElementById("matchContainer")
+  container.innerHTML = ""
 
-    users.forEach(user => {
+  users.forEach(user => {
 
-        if (user.id === currentUserId) return
+    if (user.id === currentUserId) return
 
-        const isMatch =
-            user.teaches?.toLowerCase().includes(
-                myProfile.learns?.toLowerCase()
-            )
+    const match = isMatch(user.teaches, myProfile.learns)
 
-        if (isMatch) {
-            container.innerHTML += `
-            <div class="user-card">
-                <b>${user.name}</b><br>
-                Teaches: ${user.teaches}
-                <button onclick="startChat('${user.id}')">Chat</button>
-            </div>
-            `
-        }
-        container.innerHTML += `
-  <div class="user-card">
-    <b>${user.name}</b><br>
-    Teaches: ${user.teaches}<br>
-    <button onclick="sendRequest('${user.id}')">
-      Request (5 credits)
-    </button>
-  </div>
-`
+    if (match) {
+      container.innerHTML += `
+        <div class="user-card">
+          <b>${user.name}</b><br>
+          Teaches: ${user.teaches}<br>
+          <button onclick="startChat('${user.id}')">Chat</button>
+        </div>
+      `
+    }
 
-    })
+  })
+
 }
 window.sendRequest = async function (teacherId) {
 
     // get current user
-    const { data: userData } = await supabase.auth.getUser()
+    const { data: userData } = await supabaseClient.auth.getUser()
     const userId = userData.user.id
 
     // get learner credits
@@ -190,7 +196,7 @@ window.sendRequest = async function (teacherId) {
         .eq("id", userId)
 
     // get teacher credits
-    const { data: teacher } = await supabase
+    const { data: teacher } = await supabaseClient
         .from("profiles")
         .select("credits")
         .eq("id", teacherId)
