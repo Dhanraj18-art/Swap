@@ -1,55 +1,71 @@
-const CACHE_NAME = "skillswap-cache-v4";
+const CACHE_NAME = "skillswap-v1";
 
 const urlsToCache = [
-    "/skill/",
-    "/skill/signup.html",
-    "/skill/index.html",
-    "/skill/login.html",
-    "/skill/dashboard.html",
-    "/skill/style.css",
-    "/skill/dashboard.js",
-    "/skill/supabase.js",
-    "/skill/manifest.json",
-    "/skill/logo.png"
+  "/",
+  "/index.html",
+  "/login.html",
+  "/signup.html",
+  "/dashboard.html",
+  "/style.css",
+  "/dashboard.js",
+  "/calendar.js",
+  "/logo.png"
 ];
 
 /***********************
  * INSTALL
  ***********************/
 self.addEventListener("install", event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(urlsToCache))
-    );
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log("Caching files...");
+        return cache.addAll(urlsToCache);
+      })
+  );
 });
 
 /***********************
  * FETCH
  ***********************/
 self.addEventListener("fetch", event => {
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                return response || fetch(event.request);
-            })
-    );
+
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+
+        // Return cache if exists
+        if (response) {
+          return response;
+        }
+
+        // Else fetch from network
+        return fetch(event.request);
+
+      })
+  );
+
 });
 
 /***********************
  * ACTIVATE
  ***********************/
 self.addEventListener("activate", event => {
-    const whitelist = [CACHE_NAME];
 
-    event.waitUntil(
-        caches.keys().then(names => {
-            return Promise.all(
-                names.map(name => {
-                    if (!whitelist.includes(name)) {
-                        return caches.delete(name);
-                    }
-                })
-            );
+  const cacheWhitelist = [CACHE_NAME];
+
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+
+          if (!cacheWhitelist.includes(cacheName)) {
+            return caches.delete(cacheName);
+          }
+
         })
-    );
+      );
+    })
+  );
+
 });
