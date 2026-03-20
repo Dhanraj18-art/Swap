@@ -1,10 +1,11 @@
 {
   "name": "SkillSwap",
   "short_name": "SkillSwap",
-  "start_url": "index.html",
+  "start_url": "/login.html",
   "display": "standalone",
   "background_color": "#020617",
-  "theme_color": "#22c55e",
+  "theme_color": "#020617",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "logo.png",
