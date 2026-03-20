@@ -97,7 +97,7 @@ async function saveProfile() {
 // ================= USERS =================
 async function loadAllUsers() {
 
-    const { data } = await supabase
+    const { data } = await supabaseClient
         .from("profiles")
         .select("*")
 
@@ -122,13 +122,13 @@ async function loadAllUsers() {
 // ================= MATCHES =================
 document.getElementById("findMatches").onclick = async () => {
 
-    const { data: myProfile } = await supabase
+    const { data: myProfile } = await supabaseClient
         .from("profiles")
         .select("*")
         .eq("id", currentUserId)
         .single()
 
-    const { data: users } = await supabase
+    const { data: users } = await supabaseClient
         .from("profiles")
         .select("*")
 
