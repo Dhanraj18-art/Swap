@@ -8,8 +8,7 @@ const urlsToCache = [
   "/dashboard.html",
   "/style.css",
   "/dashboard.js",
-  "/calendar.js",
-  "/logo.png"
+  "/calendar.js"
 ];
 
 /***********************
