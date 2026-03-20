@@ -6,7 +6,7 @@ let selectedUser = null
 // ================= INIT =================
 async function init() {
 
-    const { data, error } = await supabaseClient.auth.getUser()
+    const { data, error } = await supabase.auth.getUser()
 
     if (!data.user) {
         window.location.href = "login.html"
