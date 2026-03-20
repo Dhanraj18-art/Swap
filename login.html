@@ -1,290 +1,101 @@
-window.onerror = function (msg, url, line) {
-    alert("ERROR: " + msg + " at line " + line);
-}; let currentUserId = null
-let selectedUser = null
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login - SkillSwap</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-// ================= INIT =================
-async function init() {
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    const { data, error } = await supabaseClient.auth.getUser()
-
-    if (!data.user) {
-        window.location.href = "login.html"
-        return
+  <style>
+    body{
+      margin:0;
+      background:#020617;
+      font-family:Arial;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      color:white;
     }
 
-    currentUserId = data.user.id
-
-    loadProfile()
-    loadAllUsers()
-}
-
-init()
-
-// ================= TOAST =================
-function showToast(msg) {
-    let toast = document.getElementById("toast")
-
-    if (!toast) {
-        toast = document.createElement("div")
-        toast.id = "toast"
-        toast.style.position = "fixed"
-        toast.style.bottom = "90px"
-        toast.style.left = "50%"
-        toast.style.transform = "translateX(-50%)"
-        toast.style.background = "#22c55e"
-        toast.style.padding = "10px 20px"
-        toast.style.borderRadius = "10px"
-        toast.style.color = "black"
-        document.body.appendChild(toast)
+    .card{
+      width:90%;
+      max-width:380px;
+      background:#1e293b;
+      padding:25px;
+      border-radius:20px;
+      text-align:center;
     }
 
-    toast.innerText = msg
-    toast.style.display = "block"
-
-    setTimeout(() => toast.style.display = "none", 2000)
-}
-
-// ================= PROFILE =================
-async function loadProfile() {
-
-    const { data } = await supabaseClient.auth.getUser()
-    if (!data.user) return
-
-    const { data: profile } = await supabaseClient
-        .from("profiles")
-        .select("*")
-        .eq("id", data.user.id)
-        .single()
-
-    if (profile) {
-        document.getElementById("pName").innerText = profile.name || "No Name"
-        document.getElementById("pBio").innerText = profile.bio || "No Bio"
-        document.getElementById("pTeach").innerText = profile.teaches || "-"
-        document.getElementById("pLearn").innerText = profile.learns || "-"
-        document.getElementById("credits").innerText = profile.credits || 0
-    }
-}
-
-async function saveProfile() {
-
-    const { data } = await supabaseClient.auth.getUser()
-    if (!data.user) {
-        alert("Login again ❌")
-        return
+    input{
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border-radius:10px;
+      border:none;
+      background:#020617;
+      color:white;
     }
 
-    const user = data.user
+    button{
+      width:100%;
+      padding:12px;
+      margin-top:15px;
+      border-radius:10px;
+      border:none;
+      background:linear-gradient(45deg,#22c55e,#38bdf8);
+      color:white;
+      font-weight:bold;
+      cursor:pointer;
+    }
 
-    const name = document.getElementById("name").value
-    const bio = document.getElementById("bio").value
-    const teaches = document.getElementById("teaches").value
-    const learns = document.getElementById("learns").value
+    .link{
+      margin-top:10px;
+      color:#aaa;
+      cursor:pointer;
+    }
+  </style>
+</head>
 
-    await supabaseClient.from("profiles").upsert({
-        id: user.id,
-        name,
-        bio,
-        teaches,
-        learns,
-        credits: 10
-    })
+<body>
 
-    alert("Saved ✅")
-    loadProfile()
-}
+<div class="card">
+  <h2>Login</h2>
 
-// ================= USERS =================
-async function loadAllUsers() {
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
 
-    const { data } = await supabaseClient
-        .from("profiles")
-        .select("*")
+  <button onclick="login()">Login</button>
 
-    const container = document.getElementById("allUsers")
-    container.innerHTML = ""
-
-    data.forEach(user => {
-
-        if (user.id === currentUserId) return
-
-        container.innerHTML += `
-        <div class="user-card">
-            <b>${user.name}</b><br>
-            <small>Teaches: ${user.teaches}</small><br>
-            <small>Learns: ${user.learns}</small>
-            <button onclick="startChat('${user.id}')">Chat</button>
-        </div>
-        `
-    })
-}
-
-// ================= MATCHES =================
-document.getElementById("findMatches").onclick = async () => {
-
-    const { data: myProfile } = await supabaseClient
-        .from("profiles")
-        .select("*")
-        .eq("id", currentUserId)
-        .single()
-
-    const { data: users } = await supabaseClient
-        .from("profiles")
-        .select("*")
-
-    const container = document.getElementById("matchContainer")
-    container.innerHTML = ""
-
-    users.forEach(user => {
-
-        if (user.id === currentUserId) return
-
-        const isMatch =
-            user.teaches?.toLowerCase().includes(
-                myProfile.learns?.toLowerCase()
-            )
-
-        if (isMatch) {
-            container.innerHTML += `
-            <div class="user-card">
-                <b>${user.name}</b><br>
-                Teaches: ${user.teaches}
-                <button onclick="startChat('${user.id}')">Chat</button>
-            </div>
-            `
-        }
-        container.innerHTML += `
-  <div class="user-card">
-    <b>${user.name}</b><br>
-    Teaches: ${user.teaches}<br>
-    <button onclick="sendRequest('${user.id}')">
-      Request (5 credits)
-    </button>
+  <div class="link" onclick="goSignup()">
+    Create Account
   </div>
-`
+</div>
 
-    })
-}
-window.sendRequest = async function (teacherId) {
+<script>
 
-    // get current user
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData.user.id
-
-    // get learner credits
-    const { data: learner } = await supabase
-        .from("profiles")
-        .select("credits")
-        .eq("id", userId)
-        .single()
-
-    if (!learner || learner.credits < 5) {
-        alert("❌ Not enough credits")
-        return
-    }
-
-    // deduct learner credits
-    await supabaseClient
-        .from("profiles")
-        .update({ credits: learner.credits - 5 })
-        .eq("id", userId)
-
-    // get teacher credits
-    const { data: teacher } = await supabase
-        .from("profiles")
-        .select("credits")
-        .eq("id", teacherId)
-        .single()
-
-    // add credits to teacher
-    await supabaseClient
-        .from("profiles")
-        .update({ credits: (teacher.credits || 0) + 5 })
-        .eq("id", teacherId)
-
-    // store request
-    await supabaseClient
-        .from("requests")
-        .insert([{
-            sender_id: userId,
-            receiver_id: teacherId,
-            status: "pending"
-        }])
-
-    alert("✅ Request sent & 5 credits transferred")
+function goSignup(){
+  window.location.href = "signup.html"
 }
 
-// ================= CHAT =================
-window.startChat = function (userId) {
-    selectedUser = userId
-    showToast("Chat started 💬")
-    loadMessages()
-    setInterval(loadMessages, 2000)
+async function login(){
+
+  const email = document.getElementById("email").value
+  const password = document.getElementById("password").value
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  })
+
+  if(error){
+    alert(error.message)
+    return
+  }
+
+  window.location.href = "dashboard.html"
 }
-
-async function loadMessages() {
-
-    if (!selectedUser) return
-
-    const { data } = await supabaseClient
-        .from("messages")
-        .select("*")
-        .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
-        .order("created_at")
-
-    const box = document.getElementById("chatBox")
-    box.innerHTML = ""
-
-    data.forEach(msg => {
-
-        if (
-            (msg.sender_id === currentUserId && msg.receiver_id === selectedUser) ||
-            (msg.sender_id === selectedUser && msg.receiver_id === currentUserId)
-        ) {
-
-            const isMe = msg.sender_id === currentUserId
-
-            box.innerHTML += `
-            <div style="
-                background:${isMe ? '#22c55e' : '#1e293b'};
-                padding:8px;
-                border-radius:10px;
-                margin:5px;
-                text-align:${isMe ? 'right' : 'left'};
-            ">
-                ${msg.message}
-            </div>
-            `
-        }
-    })
-
-    box.scrollTop = box.scrollHeight
-}
-
-// ================= SEND =================
-document.getElementById("sendMsg").onclick = async () => {
-
-    const text = document.getElementById("chatInput").value
-
-    if (!text || !selectedUser) {
-        showToast("Select user first ❌")
-        return
-    }
-
-    await supabaseClient
-        .from("messages")
-        .insert([{
-            sender_id: currentUserId,
-            receiver_id: selectedUser,
-            message: text
-        }])
-
-    document.getElementById("chatInput").value = ""
-    loadMessages()
-}
-
-// ================= LOGOUT =================
-function logout() {
-    supabaseClient.auth.signOut()
-    window.location.href = "login.html"
-}
+</script>
+<script
+</body>
+</html>
