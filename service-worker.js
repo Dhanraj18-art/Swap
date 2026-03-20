@@ -1,7 +1,7 @@
 const CACHE_NAME = "skillswap-v1";
 
 const urlsToCache = [
-  "/",
+  "/Swap/",
   "/index.html",
   "/login.html",
   "/signup.html",
